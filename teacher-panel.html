@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Panel</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #ffffff;
+    --card: #f7f7f7;
+    --accent: #019797;
+    --accent2: #009999;
+    --text: #000000;
+    --muted: #555555;
+    font-family: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #e0f7f7, #ffffff);
+    overflow-x: hidden;
+  }
+
+  .dashboard {
+    display: flex;
+    height: 100vh;
+    transition: 0.3s;
+  }
+
+  .sidebar {
+    width: 220px;
+    background: #019797;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: 0.3s;
+    position: relative;
+    z-index: 100;
+  }
+
+  .sidebar.collapsed { width: 70px; }
+
+  .sidebar h2 {
+    text-align: center;
+    padding: 20px 0;
+    font-size: large;
+    margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    transition: 0.3s;
+  }
+
+  .sidebar.collapsed h2 { display: none; }
+
+  .sidebar a, .sidebar button {
+    padding: 15px 20px;
+    color: #fff;
+    text-decoration: none;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    background: none;
+    font-size: 14px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    transition: 0.3s;
+  }
+
+  .sidebar a i, .sidebar button i { margin-right: 10px; }
+  .sidebar.collapsed a span, .sidebar.collapsed button span { display: none; }
+
+  .sidebar a:hover, .sidebar button:hover, .sidebar a.active, .sidebar button.active {
+    background: #016a6a;
+  }
+
+  .sidebar-bottom { display: flex; flex-direction: column; }
+
+  #toggleSidebar {
+    display: none;
+    padding: 0px;
+    height: 25px;
+    width: 50px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 18px;
+    background: #009999;
+    border: none;
+    color: #fff;
+    margin: 10px;
+    border-radius: 8px;
+  }
+
+  .content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+  }
+
+  button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 12px;
+    background: #019797;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-right: 10px;
+  }
+  button:hover {
+    transform: scale(1);
+    background-color: #016a6a;
+  }
+
+  /* Form styling */
+  .form-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+  }
+
+  /* Table styling */
+  .table-container {
+    background: #fff;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow-x: auto;
+    margin-top: 15px;
+    flex: 1;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    word-wrap: break-word;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+  }
+  th {
+    background: #fff;
+    color: #019797;
+    font-weight: 600;
+  }
+  tr{
+    background-color: white;
+  }
+  table::-webkit-scrollbar {
+    height: 8px;
+  }
+  table::-webkit-scrollbar-thumb {
+    background: #019797;
+    border-radius: 4px;
+  }
+
+  /* Modal styling */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    overflow: auto;
+  }
+  .modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90%;
+    overflow-y: auto;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+  .close-btn {
+    float: right;
+    cursor: pointer;
+    font-size: 20px;
+    color: #999;
+  }
+  .close-btn:hover { color: #333; }
+
+  #Logout-button {
+    background-color: red;
+    border-radius: 0;
+    width: 100%;
+  }
+  #Logout-button:hover {
+    background-color: rgb(192, 0, 0);
+    transform: scale(1);
+  }
+
+  @media(max-width:1024px){ .sidebar { width: 180px; } }
+  @media(max-width:768px){
+    #toggleSidebar { display: block; position: fixed; top: 0px; right: 0px; z-index: 101; }
+    .dashboard { flex-direction: column; }
+    .sidebar { position: fixed; top: 0; left: -100%; width: 70%; max-width: 300px; height: 100%; transition: 0.3s; box-shadow: 2px 0 15px rgba(0,0,0,0.2); }
+    .sidebar.show { left: 0; }
+    .content { padding: 80px 15px 15px 15px; }
+    .table-container { max-height: 60vh; }
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+  @media(max-width:480px){
+    .sidebar a, .sidebar button { font-size: 14px; padding: 10px; }
+    .content { padding: 60px 10px 10px 10px; }
+    input, textarea, select { padding: 10px; }
+    button { padding: 8px 12px; font-size: 14px; }
+    th, td { padding: 8px; font-size: 12px; }
+  }
+
+  .sidebar a, .sidebar button { width: 100% !important; border-radius: 0 !important; }
+</style>
+</head>
+<body>
+
+<button id="toggleSidebar" onclick="toggleSidebar()">☰</button>
+
+<div class="dashboard">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <h2 id="teacherName">Teacher Panel</h2>
+      <button id="addExamTab" class="active" onclick="showSection('addExamSection', this)"><i class="fa fa-plus"></i> <span>Add Exam</span></button>
+      <button id="studentResultTab" onclick="showSection('studentResultsSection', this)"><i class="fa fa-chart-bar"></i> <span>Student Results</span></button>
+      <button id="studentsDetailsTab" onclick="showSection('studentsDetailsSection', this); renderStudents()"><i class="fa fa-users"></i> <span>Students Details</span></button>
+    </div>
+    <div class="sidebar-bottom">
+      <button onclick="logout()" id="Logout-button"><i class="fa fa-sign-out-alt"></i> <span>Logout</span></button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Add Exam Section -->
+    <div id="addExamSection">
+      <button onclick="openExamModal()">Add Exam</button>
+      <h3>Existing Exams</h3>
+      <table id="examTable">
+        <thead>
+          <tr><th>Title</th><th>Subject</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Student Results Section -->
+    <div id="studentResultsSection" style="display:none;">
+      <h2>Student Results</h2>
+      <p>No results yet.</p>
+    </div>
+
+    <!-- Students Details Section -->
+    <div id="studentsDetailsSection" style="display:none;">
+      <h2>Students Details</h2>
+      <select id="examFilter" onchange="renderStudents(this.value)">
+        <option value="">All Exams</option>
+      </select>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Batch</th>
+            <th>Password</th>
+            <th>Assigned Exam</th>
+          </tr>
+        </thead>
+        <tbody id="studentsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Exam Modal -->
+<div class="modal" id="examModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeExamModal()">&times;</span>
+    <h2>Create/Edit Exam</h2>
+    <div class="form-container">
+      <input type="text" id="examTitle" placeholder="Exam Title">
+      <input type="text" id="examSubject" placeholder="Subject">
+      <textarea id="examDesc" rows="3" placeholder="Description"></textarea>
+      <div id="questionsContainer"></div>
+      <select id="questionType">
+        <option value="short">Short Answer</option>
+        <option value="mcq">MCQ</option>
+        <option value="long">Long Answer</option>
+      </select>
+      <button onclick="addQuestion()">Add Question</button>
+      <button onclick="saveExam()">Save Exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Student Modal -->
+<div class="modal" id="assignStudentModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeAssignModal()">&times;</span>
+    <h2>Assign Student</h2>
+    <div class="form-container">
+      <input type="text" id="studentFirstName" placeholder="First Name">
+      <input type="text" id="studentLastName" placeholder="Last Name">
+      <input type="text" id="studentBatch" placeholder="Batch No">
+      <!-- <input type="text" id="studentPassword" placeholder="Password" readonly> -->
+      <button onclick="addStudent()">Assign Student</button>
+    </div>
+  </div>
+</div>
+<script>
+// Sidebar toggle
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+
+// Teacher info
+let teacher = JSON.parse(localStorage.getItem('loggedTeacher')) || {id:"MuhammadTariq853", name:"Muhammad Tariq"}; 
+document.getElementById('teacherName').innerText = teacher.name + " Panel";
+document.title = teacher.name + " Panel";
+
+// Sidebar tabs
+function showSection(sectionId, btn){
+  document.getElementById('addExamSection').style.display='none';
+  document.getElementById('studentResultsSection').style.display='none';
+  document.getElementById('studentsDetailsSection').style.display='none';
+  document.getElementById(sectionId).style.display='block';
+  document.querySelectorAll('.sidebar-top button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(window.innerWidth<768) toggleSidebar();
+}
+
+// Modals
+function openExamModal(){ 
+  document.getElementById('examModal').style.display='flex'; 
+  if(!editExamId) resetForm(); 
+  addDefaultQuestions(); 
+}
+function closeExamModal(){ document.getElementById('examModal').style.display='none'; }
+function logout(){ localStorage.removeItem('loggedTeacher'); window.location.href='index.html'; }
+
+// Close modals on outside click
+window.addEventListener('click', function(e){
+  const examModal = document.getElementById('examModal');
+  const assignModal = document.getElementById('assignStudentModal');
+  if(e.target===examModal) closeExamModal();
+  if(e.target===assignModal) closeAssignModal();
+});
+
+// Exam logic
+let questionCount = 0;
+let editExamId = null;
+
+function addQuestion(qData=null){
+  questionCount++;
+  const container = document.getElementById('questionsContainer');
+  const div = document.createElement('div');
+  div.classList.add('form-container');
+
+  let qType = qData?.type || document.getElementById('questionType')?.value || 'short';
+  let readonly = qData?.marks===0 ? 'readonly' : '';
+  let removeBtn = qData?.marks===0 ? '' : '<button type="button" onclick="removeQuestion(this)">Remove Question</button>';
+
+  let optionsHTML = '';
+  if(qType==='mcq'){
+    optionsHTML = `
+      <input type="text" placeholder="Option A" class="qOptA" value="${qData?.A||''}" ${readonly}>
+      <input type="text" placeholder="Option B" class="qOptB" value="${qData?.B||''}" ${readonly}>
+      <input type="text" placeholder="Option C" class="qOptC" value="${qData?.C||''}" ${readonly}>
+      <input type="text" placeholder="Option D" class="qOptD" value="${qData?.D||''}" ${readonly}>
+      <input type="text" placeholder="Correct Option (A/B/C/D)" class="qCorrect" value="${qData?.correct||''}" ${readonly}>
+    `;
+  }
+
+  div.innerHTML = `
+    <h4>Question ${questionCount} (${qType})</h4>
+    <textarea placeholder="Question text" class="qText" ${readonly}>${qData?.text||''}</textarea>
+    ${optionsHTML}
+    <input type="number" placeholder="Marks" class="qMarks" value="${qData?.marks||1}" min="0" ${readonly}>
+    ${removeBtn}
+    <hr>
+  `;
+  container.appendChild(div);
+}
+
+function removeQuestion(btn){
+  btn.parentElement.remove();
+  renumberQuestions();
+}
+
+function renumberQuestions(){
+  questionCount = 0;
+  document.querySelectorAll('#questionsContainer .form-container').forEach((qDiv)=>{
+    questionCount++;
+    const h4 = qDiv.querySelector('h4');
+    let typeText = h4.textContent.match(/\((.*)\)/)[1];
+    h4.textContent = `Question ${questionCount} (${typeText})`;
+  });
+}
+
+function resetForm(){
+  document.getElementById('examTitle').value='';
+  document.getElementById('examSubject').value='';
+  document.getElementById('examDesc').value='';
+  document.getElementById('questionsContainer').innerHTML='';
+  questionCount=0;
+  editExamId = null;
+}
+
+function addDefaultQuestions(){
+  if(editExamId) return;
+  const container = document.getElementById('questionsContainer');
+  if(container.children.length===0){
+    addQuestion({text:"What is Your Name?", marks:0, type:'short'});
+    addQuestion({text:"What is your Batch Number?", marks:0, type:'short'});
+  }
+}
+
+function saveExam(){
+  const title = document.getElementById('examTitle').value.trim();
+  const subject = document.getElementById('examSubject').value.trim();
+  const desc = document.getElementById('examDesc').value.trim();
+  if(!title || !subject){ alert('Enter title and subject'); return; }
+
+  const questions = [];
+  document.querySelectorAll('#questionsContainer .form-container').forEach(qDiv=>{
+    const qType = qDiv.querySelector('.qOptA') ? 'mcq' : 'short';
+    const q = {
+      type: qType,
+      text: qDiv.querySelector('.qText').value,
+      A: qDiv.querySelector('.qOptA')?.value||'',
+      B: qDiv.querySelector('.qOptB')?.value||'',
+      C: qDiv.querySelector('.qOptC')?.value||'',
+      D: qDiv.querySelector('.qOptD')?.value||'',
+      correct: qDiv.querySelector('.qCorrect')?.value.toUpperCase()||'',
+      marks: parseInt(qDiv.querySelector('.qMarks').value)||0
+    };
+    questions.push(q);
+  });
+
+  let exams = JSON.parse(localStorage.getItem('exams')) || [];
+
+  if(editExamId){ 
+    // EDIT existing exam
+    const index = exams.findIndex(e=>e.id===editExamId);
+    exams[index] = {id:editExamId, teacherId:teacher.id, title, subject, desc, questions};
+  } else {
+    // NEW exam
+    exams.push({id: Date.now(), teacherId:teacher.id, title, subject, desc, questions});
+  }
+
+  // SAVE to localStorage immediately
+  localStorage.setItem('exams', JSON.stringify(exams));
+  alert('Exam saved!');
+  closeExamModal();
+  renderExams();
+}
+
+// Render exams
+function renderExams(){
+  const tbody = document.querySelector('#examTable tbody');
+  tbody.innerHTML='';
+  let exams = JSON.parse(localStorage.getItem('exams')) || [];
+  exams = exams.filter(e=>e.teacherId===teacher.id);
+
+  const examFilter = document.getElementById('examFilter');
+  if(examFilter){
+    examFilter.innerHTML = '<option value="">All Exams</option>';
+    exams.forEach(e=> examFilter.innerHTML += `<option value="${e.id}">${e.title}</option>`);
+  }
+
+  exams.forEach(ex=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${ex.title}</td><td>${ex.subject}</td>
+      <td>
+        <button onclick='editExam(${ex.id})'>Edit</button>
+        <button onclick='deleteExam(${ex.id})'>Delete</button>
+        <button onclick='openAssignStudent(${ex.id})'>Assign Student</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Edit exam
+function editExam(id){
+  let exams = JSON.parse(localStorage.getItem('exams')) || [];
+  let exam = exams.find(e => e.id === id);
+  if(!exam) return;
+
+  editExamId = id;
+
+  document.getElementById('examTitle').value = exam.title;
+  document.getElementById('examSubject').value = exam.subject;
+  document.getElementById('examDesc').value = exam.desc;
+
+  const container = document.getElementById('questionsContainer');
+  container.innerHTML = '';
+  questionCount = 0;
+
+  exam.questions.forEach(q => addQuestion(q));
+  openExamModal();
+}
+
+// Delete exam
+function deleteExam(id){
+  if(!confirm('Delete this exam?')) return;
+  let exams = JSON.parse(localStorage.getItem('exams')) || [];
+  exams = exams.filter(e=>e.id!==id);
+  localStorage.setItem('exams', JSON.stringify(exams));
+  renderExams();
+}
+
+// Assign student
+function openAssignStudent(examId){
+  document.getElementById('assignStudentModal').style.display='flex';
+  if(!document.getElementById('assignStudentExamId')){
+    const input = document.createElement('input');
+    input.type='hidden'; 
+    input.id='assignStudentExamId';
+    document.getElementById('assignStudentModal').querySelector('.form-container').appendChild(input);
+  }
+  document.getElementById('assignStudentExamId').value = examId;
+}
+
+function addStudent(){
+  const f = document.getElementById('studentFirstName').value.trim();
+  const l = document.getElementById('studentLastName').value.trim();
+  const b = document.getElementById('studentBatch').value.trim();
+  if(!f||!l||!b){ alert('Enter all fields'); return; }
+
+  let students = JSON.parse(localStorage.getItem('students')) || [];
+  const id = Date.now();
+  const password = Math.random().toString(36).slice(-8);
+
+  const assignedExam = document.getElementById('assignStudentExamId').value;
+  const assignedExamName = (() => {
+    const exam = JSON.parse(localStorage.getItem('exams'))?.find(e=>e.id==assignedExam);
+    return exam ? exam.title : '';
+  })();
+
+  students.push({id, firstName:f, lastName:l, batch:b, password, assignedExam, assignedExamName});
+  localStorage.setItem('students', JSON.stringify(students));
+
+  alert('Student assigned!');
+  document.getElementById('studentFirstName').value='';
+  document.getElementById('studentLastName').value='';
+  document.getElementById('studentBatch').value='';
+  renderStudents();
+  closeAssignModal();
+}
+
+function closeAssignModal(){ document.getElementById('assignStudentModal').style.display='none'; }
+
+// Students table
+function renderStudents(filterExam=''){
+  const tbody = document.getElementById('studentsTableBody');
+  tbody.innerHTML='';
+  let students = JSON.parse(localStorage.getItem('students')) || [];
+  if(filterExam) students = students.filter(s=>s.assignedExam==filterExam);
+  students.forEach(s=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${s.id}</td><td>${s.firstName}</td><td>${s.lastName}</td><td>${s.batch}</td><td>${s.password}</td><td>${s.assignedExamName||''}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Initial render
+renderExams();
+renderStudents();
+</script>
+
+</body>
+</html>
