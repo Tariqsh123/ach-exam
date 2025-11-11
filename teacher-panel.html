@@ -285,6 +285,7 @@
             <th>Batch</th>
             <th>Password</th>
             <th>Assigned Exam</th>
+            <th>Teacher Name</th>
           </tr>
         </thead>
         <tbody id="studentsTableBody"></tbody>
@@ -323,11 +324,11 @@
       <input type="text" id="studentFirstName" placeholder="First Name">
       <input type="text" id="studentLastName" placeholder="Last Name">
       <input type="text" id="studentBatch" placeholder="Batch No">
-      <!-- <input type="text" id="studentPassword" placeholder="Password" readonly> -->
       <button onclick="addStudent()">Assign Student</button>
     </div>
   </div>
 </div>
+
 <script>
 // Sidebar toggle
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
@@ -459,22 +460,18 @@ function saveExam(){
   let exams = JSON.parse(localStorage.getItem('exams')) || [];
 
   if(editExamId){ 
-    // EDIT existing exam
     const index = exams.findIndex(e=>e.id===editExamId);
     exams[index] = {id:editExamId, teacherId:teacher.id, title, subject, desc, questions};
   } else {
-    // NEW exam
     exams.push({id: Date.now(), teacherId:teacher.id, title, subject, desc, questions});
   }
 
-  // SAVE to localStorage immediately
   localStorage.setItem('exams', JSON.stringify(exams));
   alert('Exam saved!');
   closeExamModal();
   renderExams();
 }
 
-// Render exams
 function renderExams(){
   const tbody = document.querySelector('#examTable tbody');
   tbody.innerHTML='';
@@ -499,7 +496,6 @@ function renderExams(){
   });
 }
 
-// Edit exam
 function editExam(id){
   let exams = JSON.parse(localStorage.getItem('exams')) || [];
   let exam = exams.find(e => e.id === id);
@@ -519,7 +515,6 @@ function editExam(id){
   openExamModal();
 }
 
-// Delete exam
 function deleteExam(id){
   if(!confirm('Delete this exam?')) return;
   let exams = JSON.parse(localStorage.getItem('exams')) || [];
@@ -528,7 +523,6 @@ function deleteExam(id){
   renderExams();
 }
 
-// Assign student
 function openAssignStudent(examId){
   document.getElementById('assignStudentModal').style.display='flex';
   if(!document.getElementById('assignStudentExamId')){
@@ -556,7 +550,11 @@ function addStudent(){
     return exam ? exam.title : '';
   })();
 
-  students.push({id, firstName:f, lastName:l, batch:b, password, assignedExam, assignedExamName});
+  students.push({
+    id, firstName:f, lastName:l, batch:b, password,
+    assignedExam, assignedExamName,
+    teacherName: teacher.name // NEW COLUMN
+  });
   localStorage.setItem('students', JSON.stringify(students));
 
   alert('Student assigned!');
@@ -569,7 +567,6 @@ function addStudent(){
 
 function closeAssignModal(){ document.getElementById('assignStudentModal').style.display='none'; }
 
-// Students table
 function renderStudents(filterExam=''){
   const tbody = document.getElementById('studentsTableBody');
   tbody.innerHTML='';
@@ -577,7 +574,7 @@ function renderStudents(filterExam=''){
   if(filterExam) students = students.filter(s=>s.assignedExam==filterExam);
   students.forEach(s=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${s.id}</td><td>${s.firstName}</td><td>${s.lastName}</td><td>${s.batch}</td><td>${s.password}</td><td>${s.assignedExamName||''}</td>`;
+    tr.innerHTML = `<td>${s.id}</td><td>${s.firstName}</td><td>${s.lastName}</td><td>${s.batch}</td><td>${s.password}</td><td>${s.assignedExamName||''}</td><td>${s.teacherName||''}</td>`;
     tbody.appendChild(tr);
   });
 }

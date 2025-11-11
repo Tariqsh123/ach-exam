@@ -67,7 +67,6 @@ body {
 
 .sidebar a.active, .sidebar a:hover, .sidebar button:hover {
   background: var(--accent2);
-  /* font-weight:600; */
 }
 
 .sidebar .logout {
@@ -282,26 +281,26 @@ tr:hover {
     </div>
 
     <!-- Students Details -->
-    <div id="studentsDetails" style="display:none;">
-      <h3>Students Details</h3>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Batch</th>
-              <th>Password</th>
-              <th>Assigned Exam</th>
-            </tr>
-          </thead>
-          <tbody id="studentsTableBody"></tbody>
-        </table>
-      </div>
-    </div>
+<div id="studentsDetails" style="display:none;">
+  <h3>Students Details</h3>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Batch</th>
+          <th>Password</th>
+          <th>Assigned Exam</th>
+          <th>Teacher Name</th> <!-- NEW COLUMN -->
+        </tr>
+      </thead>
+      <tbody id="studentsTableBody"></tbody>
+    </table>
   </div>
 </div>
+
 
 <!-- Add Teacher Modal -->
 <div id="teacherModal" class="modal" onclick="if(event.target==this) closeModal()">
@@ -352,14 +351,19 @@ function openAddTeacherModal(){
 function closeModal(){ document.getElementById('teacherModal').style.display='none'; }
 
 function addTeacherFromForm(){
-  const firstName=document.getElementById('firstName').value.trim();
-  const lastName=document.getElementById('lastName').value.trim();
-  if(!firstName || !lastName){alert('Enter both names'); return;}
-  const id=Date.now(); // unique ID
-  const date=new Date().toISOString().split('T')[0];
-  const password=Math.random().toString(36).substring(2,8);
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName = document.getElementById('lastName').value.trim();
+  if(!firstName || !lastName){ alert('Enter both names'); return; }
+
+  // ID as First+Last+3 digit random
+  const randomNum = Math.floor(100 + Math.random() * 900);
+  const id = firstName + lastName + randomNum;
+
+  const date = new Date().toISOString().split('T')[0];
+  const password = Math.random().toString(36).substring(2,8);
   const nextUpdate = new Date().getTime() + 7*24*60*60*1000;
-  teachers.push({id,name:firstName+' '+lastName,date,password,nextUpdate});
+
+  teachers.push({id, name:firstName+' '+lastName, date, password, nextUpdate});
   saveTeachers();
   renderTeachers();
   closeModal();
@@ -370,7 +374,10 @@ function renderTeachers(){
   tbody.innerHTML='';
   const now = new Date().getTime();
   teachers.forEach(t=>{
-    if(now > t.nextUpdate){ t.password=Math.random().toString(36).substring(2,8); t.nextUpdate = now + 7*24*60*60*1000; }
+    if(now > t.nextUpdate){ 
+      t.password=Math.random().toString(36).substring(2,8); 
+      t.nextUpdate = now + 7*24*60*60*1000; 
+    }
     const tr=document.createElement('tr');
     tr.innerHTML=`<td>${t.id}</td><td>${t.name}</td><td>${t.date}</td><td>${t.password}</td><td><button onclick='viewTeacher("${t.id}")'>View</button></td>`;
     tbody.appendChild(tr);
@@ -379,8 +386,9 @@ function renderTeachers(){
 }
 
 function viewTeacher(id){
-  selectedTeacher = teachers.find(t=>t.id===id);
+  selectedTeacher = teachers.find(t => t.id == id);
   if(!selectedTeacher) return;
+
   const nextUpdateDate = new Date(selectedTeacher.nextUpdate);
   document.getElementById('teacherDetails').innerHTML = `
     <strong>ID:</strong> ${selectedTeacher.id}<br>
@@ -413,12 +421,18 @@ function renderStudents(){
   tbody.innerHTML = '';
   const students = JSON.parse(localStorage.getItem('students')) || [];
   const exams = JSON.parse(localStorage.getItem('exams')) || [];
+
   if(students.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6">No students assigned</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7">No students assigned</td></tr>';
     return;
   }
+
   students.forEach(s => {
-    const ex = exams.find(e => e.id === s.examId);
+    // Get exam ID: prefer 'examId', fallback to 'assignedExam'
+    const examId = s.examId || s.assignedExam;
+    const ex = exams.find(e => e.id == examId); // match string/number
+    const teacher = ex ? teachers.find(t => t.id === ex.teacherId) : null;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${s.id}</td>
@@ -426,11 +440,13 @@ function renderStudents(){
       <td>${s.lastName}</td>
       <td>${s.batch}</td>
       <td>${s.password}</td>
-      <td>${ex ? ex.title : 'N/A'}</td>
+      <td>${ex ? ex.title : s.assignedExamName || 'N/A'}</td>
+      <td>${teacher ? teacher.name : 'N/A'}</td>
     `;
     tbody.appendChild(tr);
   });
 }
+
 
 // render on page load
 renderTeachers();
